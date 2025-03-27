@@ -1,0 +1,5 @@
+{
+  "water+fire": "steam",
+  "water+water": "lake",
+  "lake+lake": "ocean"
+}

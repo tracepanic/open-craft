@@ -1,0 +1,23 @@
+{
+  "water": {
+    "name": "💧 Water"
+  },
+  "fire": {
+    "name": "🔥 Fire"
+  },
+  "wind": {
+    "name": "🌪️ Wind"
+  },
+  "earth": {
+    "name": "🌍 Earth"
+  },
+  "steam": {
+    "name": "💨 Steam"
+  },
+  "lake": {
+    "name": "🌊 Lake"
+  },
+  "ocean": {
+    "name": "🌊 Ocean"
+  }
+}
