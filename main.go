@@ -190,7 +190,9 @@ func (gs *GameState) addDiscovered(element string) {
 }
 
 func normalizeElementName(name string) string {
-	return strings.ToLower(strings.TrimSpace(name))
+	name = strings.ToLower(strings.TrimSpace(name))
+	name = strings.ReplaceAll(name, " ", "-")
+	return name
 }
 
 func (gs *GameState) combineElements(elem1, elem2 string) string {
