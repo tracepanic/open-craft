@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"embed"
 	"encoding/json"
+	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +15,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 //go:embed data/*
@@ -26,6 +30,18 @@ type GameState struct {
 	Elements   map[string]Element `json:"elements"`
 	Recipes    map[string]string  `json:"recipes"`
 	Discovered []string           `json:"discovered"`
+}
+
+type TelegramBot struct {
+	bot        *tgbotapi.BotAPI
+	gameStates map[int64]*GameState
+	userStates map[int64]UserState
+}
+
+type UserState struct {
+	waitingForFirstElement  bool
+	waitingForSecondElement bool
+	firstElement            string
 }
 
 func loadEmbeddedJSON(filename string, v any) error {
@@ -88,6 +104,20 @@ func getProgressFilePath() (string, error) {
 	return filepath.Join(configDir, "progress.json"), nil
 }
 
+func getTelegramUserProgressPath(userID int64) (string, error) {
+	configDir, err := getConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	telegramDir := filepath.Join(configDir, "telegram")
+	if err := os.MkdirAll(telegramDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create telegram directory: %w", err)
+	}
+
+	return filepath.Join(telegramDir, fmt.Sprintf("%d.json", userID)), nil
+}
+
 func loadGameState() (*GameState, error) {
 	gameState := &GameState{
 		Elements:   make(map[string]Element),
@@ -115,14 +145,28 @@ func loadGameState() (*GameState, error) {
 
 	if len(gameState.Discovered) == 0 {
 		gameState.Discovered = []string{"water", "fire", "earth", "wind"}
-		gameState.saveProgress()
+		gameState.saveLocalProgress()
 	}
 
 	return gameState, nil
 }
 
-func (gs *GameState) saveProgress() error {
+func (gs *GameState) saveLocalProgress() error {
 	progressPath, err := getProgressFilePath()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(gs.Discovered, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(progressPath, data, 0644)
+}
+
+func (gs *GameState) saveTelegramProgress(userID int64) error {
+	progressPath, err := getTelegramUserProgressPath(userID)
 	if err != nil {
 		return err
 	}
@@ -166,14 +210,241 @@ func (gs *GameState) combineElements(elem1, elem2 string) string {
 	return ""
 }
 
+func NewTelegramBot(token string, gameState *GameState) (*TelegramBot, error) {
+	bot, err := tgbotapi.NewBotAPI(token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TelegramBot{
+		bot:        bot,
+		gameStates: make(map[int64]*GameState),
+		userStates: make(map[int64]UserState),
+	}, nil
+}
+
+func (tb *TelegramBot) getUserGameState(userID int64) (*GameState, error) {
+	if gameState, exists := tb.gameStates[userID]; exists {
+		return gameState, nil
+	}
+
+	gameState := &GameState{
+		Elements:   make(map[string]Element),
+		Recipes:    make(map[string]string),
+		Discovered: make([]string, 0),
+	}
+
+	if err := loadEmbeddedJSON("data/elements.json", &gameState.Elements); err != nil {
+		return nil, fmt.Errorf("failed to load elements: %w", err)
+	}
+
+	if err := loadEmbeddedJSON("data/recipes.json", &gameState.Recipes); err != nil {
+		return nil, fmt.Errorf("failed to load recipes: %w", err)
+	}
+
+	progressPath, err := getTelegramUserProgressPath(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(progressPath)
+	if err == nil {
+		json.Unmarshal(data, &gameState.Discovered)
+	}
+
+	if len(gameState.Discovered) == 0 {
+		gameState.Discovered = []string{"water", "fire", "earth", "wind"}
+		gameState.saveTelegramProgress(userID)
+	}
+
+	tb.gameStates[userID] = gameState
+	return gameState, nil
+}
+
+func (tb *TelegramBot) sendMainMenu(chatID int64) {
+	keyboard := tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("🔮 Combine Elements"),
+			tgbotapi.NewKeyboardButton("📚 Discovered Elements"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("💡 Show Hints"),
+		),
+	)
+
+	msg := tgbotapi.NewMessage(chatID, "Choose an option:")
+	msg.ReplyMarkup = keyboard
+	tb.bot.Send(msg)
+}
+
+func (tb *TelegramBot) sendElementsList(chatID int64) {
+	gameState, err := tb.getUserGameState(chatID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(chatID, "Error loading game state")
+		tb.bot.Send(msg)
+		return
+	}
+
+	discovered := make([]string, len(gameState.Discovered))
+	copy(discovered, gameState.Discovered)
+	sort.Strings(discovered)
+
+	var elements strings.Builder
+	elements.WriteString("Available Elements:\n\n")
+	for _, name := range discovered {
+		elements.WriteString(fmt.Sprintf("- %s\n", gameState.Elements[name].Name))
+	}
+	elements.WriteString("\nEnter the first element:")
+
+	msg := tgbotapi.NewMessage(chatID, elements.String())
+	tb.bot.Send(msg)
+}
+
+func (tb *TelegramBot) sendDiscoveredElements(chatID int64) {
+	gameState, err := tb.getUserGameState(chatID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(chatID, "Error loading game state")
+		tb.bot.Send(msg)
+		return
+	}
+
+	discovered := make([]string, len(gameState.Discovered))
+	copy(discovered, gameState.Discovered)
+	sort.Strings(discovered)
+
+	var elements strings.Builder
+	elements.WriteString("Discovered Elements:\n\n")
+	for _, name := range discovered {
+		elements.WriteString(fmt.Sprintf("- %s\n", gameState.Elements[name].Name))
+	}
+
+	msg := tgbotapi.NewMessage(chatID, elements.String())
+	tb.bot.Send(msg)
+}
+
+func (tb *TelegramBot) sendHints(chatID int64) {
+	hints := `Hints:
+1. Try combining basic elements first
+2. Some elements can be combined in multiple ways
+3. Look for logical combinations (e.g., water + fire = steam)`
+
+	msg := tgbotapi.NewMessage(chatID, hints)
+	tb.bot.Send(msg)
+}
+
+func (tb *TelegramBot) handleFirstElement(chatID int64, element string) {
+	gameState, err := tb.getUserGameState(chatID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(chatID, "Error loading game state")
+		tb.bot.Send(msg)
+		return
+	}
+
+	element = normalizeElementName(element)
+	if !gameState.isDiscovered(element) {
+		msg := tgbotapi.NewMessage(chatID, "You haven't discovered this element yet! Try another one.")
+		tb.bot.Send(msg)
+		return
+	}
+
+	tb.userStates[chatID] = UserState{
+		waitingForSecondElement: true,
+		firstElement:            element,
+	}
+
+	msg := tgbotapi.NewMessage(chatID, "Enter the second element:")
+	tb.bot.Send(msg)
+}
+
+func (tb *TelegramBot) handleSecondElement(chatID int64, firstElement, secondElement string) {
+	gameState, err := tb.getUserGameState(chatID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(chatID, "Error loading game state")
+		tb.bot.Send(msg)
+		return
+	}
+
+	secondElement = normalizeElementName(secondElement)
+	if !gameState.isDiscovered(secondElement) {
+		msg := tgbotapi.NewMessage(chatID, "You haven't discovered this element yet! Try another one.")
+		tb.bot.Send(msg)
+		return
+	}
+
+	result := gameState.combineElements(firstElement, secondElement)
+	if result != "" {
+		gameState.saveTelegramProgress(chatID)
+		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("✨ You created: %s!", gameState.Elements[result].Name))
+		tb.bot.Send(msg)
+	} else {
+		msg := tgbotapi.NewMessage(chatID, "❌ These elements cannot be combined.")
+		tb.bot.Send(msg)
+	}
+
+	delete(tb.userStates, chatID)
+	tb.sendMainMenu(chatID)
+}
+
+func (tb *TelegramBot) Start() {
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates := tb.bot.GetUpdatesChan(u)
+
+	for update := range updates {
+		if update.Message == nil {
+			continue
+		}
+
+		chatID := update.Message.Chat.ID
+		msg := update.Message.Text
+
+		switch msg {
+		case "/start":
+			welcomeMsg := tgbotapi.NewMessage(chatID, "Welcome to Open Craft! 🌟\nCombine elements to discover new ones!")
+			tb.bot.Send(welcomeMsg)
+			tb.sendMainMenu(chatID)
+		case "🔮 Combine Elements":
+			tb.userStates[chatID] = UserState{waitingForFirstElement: true}
+			tb.sendElementsList(chatID)
+		case "📚 Discovered Elements":
+			tb.sendDiscoveredElements(chatID)
+		case "💡 Show Hints":
+			tb.sendHints(chatID)
+		default:
+			if state, exists := tb.userStates[chatID]; exists {
+				if state.waitingForFirstElement {
+					tb.handleFirstElement(chatID, msg)
+				} else if state.waitingForSecondElement {
+					tb.handleSecondElement(chatID, state.firstElement, msg)
+				}
+			}
+		}
+	}
+}
+
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
+	botToken := flag.String("bot", "", "Telegram bot token")
+	flag.Parse()
 
 	gameState, err := loadGameState()
 	if err != nil {
 		fmt.Printf("Failed to load game state: %v\n", err)
 		return
 	}
+
+	if *botToken != "" {
+		bot, err := NewTelegramBot(*botToken, gameState)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("Starting Telegram Bot...")
+		bot.Start()
+		return
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
 		clearScreen()
@@ -209,7 +480,7 @@ func main() {
 
 			if result := gameState.combineElements(elem1, elem2); result != "" {
 				printSlowly(fmt.Sprintf("✨ You created: %s!", gameState.Elements[result].Name), 30*time.Millisecond)
-				gameState.saveProgress()
+				gameState.saveLocalProgress()
 			} else {
 				printSlowly("❌ These elements cannot be combined.", 30*time.Millisecond)
 			}
@@ -235,7 +506,7 @@ func main() {
 			getInput("\nPress Enter to continue...", scanner)
 
 		case "4":
-			if err := gameState.saveProgress(); err != nil {
+			if err := gameState.saveLocalProgress(); err != nil {
 				fmt.Printf("Failed to save progress: %v\n", err)
 			}
 			printSlowly("Thanks for playing! Your progress has been saved.", 30*time.Millisecond)
