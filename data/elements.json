@@ -19,5 +19,50 @@
   },
   "ocean": {
     "name": "🌊 Ocean"
+  },
+  "fish": {
+    "name": "🐟 Fish"
+  },
+  "flying-fish": {
+    "name": "🐟 Flying Fish"
+  },
+  "airplane": {
+    "name": "✈️ Airplane"
+  },
+  "plane": {
+    "name": "✈️ Plane"
+  },
+  "jet": {
+    "name": "✈️ Jet"
+  },
+  "crash": {
+    "name": "💥 Crash"
+  },
+  "wreck": {
+    "name": "🚢 Wreck"
+  },
+  "tornado": {
+    "name": "🌪️ Tornado"
+  },
+  "bird": {
+    "name": "🐦 Bird"
+  },
+  "rocket": {
+    "name": "🚀 Rocket"
+  },
+  "kite": {
+    "name": "🪁 Kite"
+  },
+  "moon": {
+    "name": "🌙 Moon"
+  },
+  "planet": {
+    "name": "🪐 Planet"
+  },
+  "star": {
+    "name": "⭐️ Star"
+  },
+  "Solar System": {
+    "name": "🌌 Solar System"
   }
 }

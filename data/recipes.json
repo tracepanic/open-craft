@@ -1,5 +1,22 @@
 {
   "water+fire": "steam",
   "water+water": "lake",
-  "lake+lake": "ocean"
+  "lake+lake": "ocean",
+  "water+lake": "ocean",
+  "ocean+water": "fish",
+  "fish+wind": "flying-fish",
+  "flying-fish+wind": "airplane",
+  "fire+airplane": "crash",
+  "airplane+crash": "wreck",
+  "wind+wreck": "tornado",
+  "earth+flying-fish": "bird",
+  "bird+crash": "plane",
+  "plane+plane": "jet",
+  "fire+jet": "rocket",
+  "rocket+wind": "kite",
+  "earth+rocket": "moon",
+  "moon+moon": "planet",
+  "planet+rocket": "moon",
+  "planet+planet": "star",
+  "star+planet": "solar-system"
 }
