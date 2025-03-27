@@ -271,6 +271,7 @@ func (tb *TelegramBot) sendMainMenu(chatID int64) {
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("💡 Show Hints"),
+			tgbotapi.NewKeyboardButton("📥 Download Save"),
 		),
 	)
 
@@ -332,6 +333,37 @@ func (tb *TelegramBot) sendHints(chatID int64) {
 
 	msg := tgbotapi.NewMessage(chatID, hints)
 	tb.bot.Send(msg)
+}
+
+func (tb *TelegramBot) sendSaveFile(chatID int64) {
+	saveFilePath, err := getTelegramUserProgressPath(chatID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(chatID, "Error locating save file")
+		tb.bot.Send(msg)
+		return
+	}
+
+	if _, err := os.Stat(saveFilePath); os.IsNotExist(err) {
+		msg := tgbotapi.NewMessage(chatID, "No save file found")
+		tb.bot.Send(msg)
+		return
+	}
+
+	gameState, err := tb.getUserGameState(chatID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(chatID, "Error loading game state")
+		tb.bot.Send(msg)
+		return
+	}
+
+	doc := tgbotapi.NewDocument(chatID, tgbotapi.FilePath(saveFilePath))
+	doc.Caption = fmt.Sprintf("Your save file containing %d discovered elements", len(gameState.Discovered))
+
+	if _, err := tb.bot.Send(doc); err != nil {
+		msg := tgbotapi.NewMessage(chatID, "Error sending save file")
+		tb.bot.Send(msg)
+		return
+	}
 }
 
 func (tb *TelegramBot) handleFirstElement(chatID int64, element string) {
@@ -413,6 +445,8 @@ func (tb *TelegramBot) Start() {
 			tb.sendDiscoveredElements(chatID)
 		case "💡 Show Hints":
 			tb.sendHints(chatID)
+		case "📥 Download Save":
+			tb.sendSaveFile(chatID)
 		default:
 			if state, exists := tb.userStates[chatID]; exists {
 				if state.waitingForFirstElement {
