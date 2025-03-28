@@ -21,5 +21,7 @@
   "star+planet": "solar-system",
   "earth+fire": "lava",
   "lava+earth": "stone",
-  "wind+fire": "smoke"
+  "wind+fire": "smoke",
+  "fire+fire": "volcano",
+  "airplane+water": "boat"
 }

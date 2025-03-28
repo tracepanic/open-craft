@@ -83,7 +83,7 @@
     "name": "⭐️ Star",
     "category": "Celestial"
   },
-  "Solar System": {
+  "solar-system": {
     "name": "🌌 Solar System",
     "category": "Celestial"
   },
@@ -98,5 +98,13 @@
   "smoke": {
     "name": "💨 Smoke",
     "category": "Atmospheric"
+  },
+  "volcano": {
+    "name": "🌋 Volcano",
+    "category": "Natural"
+  },
+  "boat": {
+    "name": "⛵️ Boat",
+    "category": "Technological"
   }
 }
