@@ -18,5 +18,10 @@
   "moon+moon": "planet",
   "planet+rocket": "moon",
   "planet+planet": "star",
-  "star+planet": "solar-system"
+  "star+planet": "solar-system",
+  "earth+fire": "lava",
+  "lava+earth": "stone",
+  "wind+fire": "smoke",
+  "fire+fire": "volcano",
+  "airplane+water": "boat"
 }

@@ -23,7 +23,8 @@ import (
 var gameFiles embed.FS
 
 type Element struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
+	Category string `json:"category"`
 }
 
 type GameState struct {
@@ -304,6 +305,34 @@ func (tb *TelegramBot) sendElementsList(chatID int64) {
 }
 
 func (tb *TelegramBot) sendDiscoveredElements(chatID int64) {
+	keyboard := [][]tgbotapi.KeyboardButton{
+		{
+			tgbotapi.NewKeyboardButton("🌟 Primordial"),
+			tgbotapi.NewKeyboardButton("🌿 Natural"),
+		},
+		{
+			tgbotapi.NewKeyboardButton("⚗️ Chemical"),
+			tgbotapi.NewKeyboardButton("🌪️ Atmospheric"),
+		},
+		{
+			tgbotapi.NewKeyboardButton("✨ Celestial"),
+			tgbotapi.NewKeyboardButton("🧬 Biological"),
+		},
+		{
+			tgbotapi.NewKeyboardButton("⚡ Technological"),
+			tgbotapi.NewKeyboardButton("🔮 Mythical"),
+		},
+		{
+			tgbotapi.NewKeyboardButton("📋 Show All Discovered"),
+		},
+	}
+
+	msg := tgbotapi.NewMessage(chatID, "Select a category to view discovered elements:")
+	msg.ReplyMarkup = tgbotapi.NewReplyKeyboard(keyboard...)
+	tb.bot.Send(msg)
+}
+
+func (tb *TelegramBot) showElementsByCategory(chatID int64, category string) {
 	gameState, err := tb.getUserGameState(chatID)
 	if err != nil {
 		msg := tgbotapi.NewMessage(chatID, "Error loading game state")
@@ -311,17 +340,30 @@ func (tb *TelegramBot) sendDiscoveredElements(chatID int64) {
 		return
 	}
 
-	discovered := make([]string, len(gameState.Discovered))
-	copy(discovered, gameState.Discovered)
-	sort.Strings(discovered)
-
 	var elements strings.Builder
-	elements.WriteString("Discovered Elements:\n\n")
-	for _, name := range discovered {
-		elements.WriteString(fmt.Sprintf("- %s\n", gameState.Elements[name].Name))
+	elements.WriteString(fmt.Sprintf("%s Elements:\n\n", category))
+
+	discoveredInCategory := 0
+	for _, name := range gameState.Discovered {
+		if element, exists := gameState.Elements[name]; exists {
+			if element.Category == category {
+				elements.WriteString(fmt.Sprintf("- %s\n", element.Name))
+				discoveredInCategory++
+			}
+		}
+	}
+
+	if discoveredInCategory == 0 {
+		elements.WriteString("No elements discovered in this category yet!")
 	}
 
 	msg := tgbotapi.NewMessage(chatID, elements.String())
+	msg.ReplyMarkup = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("◀️ Back to Categories"),
+			tgbotapi.NewKeyboardButton("🏠 Main Menu"),
+		),
+	)
 	tb.bot.Send(msg)
 }
 
@@ -364,6 +406,37 @@ func (tb *TelegramBot) sendSaveFile(chatID int64) {
 		tb.bot.Send(msg)
 		return
 	}
+}
+
+func (tb *TelegramBot) showAllDiscovered(chatID int64) {
+	gameState, err := tb.getUserGameState(chatID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(chatID, "Error loading game state")
+		tb.bot.Send(msg)
+		return
+	}
+
+	var elements strings.Builder
+	elements.WriteString(fmt.Sprintf("All Discovered Elements (%d total):\n\n", len(gameState.Discovered)))
+
+	discovered := make([]string, len(gameState.Discovered))
+	copy(discovered, gameState.Discovered)
+	sort.Strings(discovered)
+
+	for _, name := range discovered {
+		if element, exists := gameState.Elements[name]; exists {
+			elements.WriteString(fmt.Sprintf("- %s (%s)\n", element.Name, element.Category))
+		}
+	}
+
+	msg := tgbotapi.NewMessage(chatID, elements.String())
+	msg.ReplyMarkup = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("◀️ Back to Categories"),
+			tgbotapi.NewKeyboardButton("🏠 Main Menu"),
+		),
+	)
+	tb.bot.Send(msg)
 }
 
 func (tb *TelegramBot) handleFirstElement(chatID int64, element string) {
@@ -447,6 +520,28 @@ func (tb *TelegramBot) Start() {
 			tb.sendHints(chatID)
 		case "📥 Download Save":
 			tb.sendSaveFile(chatID)
+		case "🌟 Primordial":
+			tb.showElementsByCategory(chatID, "Primordial")
+		case "🌿 Natural":
+			tb.showElementsByCategory(chatID, "Natural")
+		case "⚗️ Chemical":
+			tb.showElementsByCategory(chatID, "Chemical")
+		case "🌪️ Atmospheric":
+			tb.showElementsByCategory(chatID, "Atmospheric")
+		case "✨ Celestial":
+			tb.showElementsByCategory(chatID, "Celestial")
+		case "🧬 Biological":
+			tb.showElementsByCategory(chatID, "Biological")
+		case "⚡ Technological":
+			tb.showElementsByCategory(chatID, "Technological")
+		case "🔮 Mythical":
+			tb.showElementsByCategory(chatID, "Mythical")
+		case "📋 Show All Discovered":
+			tb.showAllDiscovered(chatID)
+		case "◀️ Back to Categories":
+			tb.sendDiscoveredElements(chatID)
+		case "🏠 Main Menu":
+			tb.sendMainMenu(chatID)
 		default:
 			if state, exists := tb.userStates[chatID]; exists {
 				if state.waitingForFirstElement {

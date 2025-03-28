@@ -1,68 +1,110 @@
 {
   "water": {
-    "name": "💧 Water"
+    "name": "💧 Water",
+    "category": "Primordial"
   },
   "fire": {
-    "name": "🔥 Fire"
+    "name": "🔥 Fire",
+    "category": "Primordial"
   },
   "wind": {
-    "name": "🌪️ Wind"
+    "name": "🌪️ Wind",
+    "category": "Primordial"
   },
   "earth": {
-    "name": "🌍 Earth"
+    "name": "🌍 Earth",
+    "category": "Primordial"
   },
   "steam": {
-    "name": "💨 Steam"
+    "name": "💨 Steam",
+    "category": "Atmospheric"
   },
   "lake": {
-    "name": "🌊 Lake"
+    "name": "🌊 Lake",
+    "category": "Natural"
   },
   "ocean": {
-    "name": "🌊 Ocean"
+    "name": "🌊 Ocean",
+    "category": "Natural"
   },
   "fish": {
-    "name": "🐟 Fish"
+    "name": "🐟 Fish",
+    "category": "Biological"
   },
   "flying-fish": {
-    "name": "🐟 Flying Fish"
+    "name": "🐟 Flying Fish",
+    "category": "Biological"
   },
   "airplane": {
-    "name": "✈️ Airplane"
+    "name": "✈️ Airplane",
+    "category": "Technological"
   },
   "plane": {
-    "name": "✈️ Plane"
+    "name": "✈️ Plane",
+    "category": "Technological"
   },
   "jet": {
-    "name": "✈️ Jet"
+    "name": "✈️ Jet",
+    "category": "Technological"
   },
   "crash": {
-    "name": "💥 Crash"
+    "name": "💥 Crash",
+    "category": "Chemical"
   },
   "wreck": {
-    "name": "🚢 Wreck"
+    "name": "🚢 Wreck",
+    "category": "Technological"
   },
   "tornado": {
-    "name": "🌪️ Tornado"
+    "name": "🌪️ Tornado",
+    "category": "Atmospheric"
   },
   "bird": {
-    "name": "🐦 Bird"
+    "name": "🐦 Bird",
+    "category": "Biological"
   },
   "rocket": {
-    "name": "🚀 Rocket"
+    "name": "🚀 Rocket",
+    "category": "Technological"
   },
   "kite": {
-    "name": "🪁 Kite"
+    "name": "🪁 Kite",
+    "category": "Technological"
   },
   "moon": {
-    "name": "🌙 Moon"
+    "name": "🌙 Moon",
+    "category": "Celestial"
   },
   "planet": {
-    "name": "🪐 Planet"
+    "name": "🪐 Planet",
+    "category": "Celestial"
   },
   "star": {
-    "name": "⭐️ Star"
+    "name": "⭐️ Star",
+    "category": "Celestial"
   },
-  "Solar System": {
-    "name": "🌌 Solar System"
+  "solar-system": {
+    "name": "🌌 Solar System",
+    "category": "Celestial"
+  },
+  "lava": {
+    "name": "🔥 Lava",
+    "category": "Natural"
+  },
+  "stone": {
+    "name": "🪨 Stone",
+    "category": "Natural"
+  },
+  "smoke": {
+    "name": "💨 Smoke",
+    "category": "Atmospheric"
+  },
+  "volcano": {
+    "name": "🌋 Volcano",
+    "category": "Natural"
+  },
+  "boat": {
+    "name": "⛵️ Boat",
+    "category": "Technological"
   }
 }
