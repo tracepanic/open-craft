@@ -106,5 +106,41 @@
   "boat": {
     "name": "⛵️ Boat",
     "category": "Technological"
+  },
+  "tsunami": {
+    "name": "🌊 Tsunami",
+    "category": "Natural"
+  },
+  "supernova": {
+    "name": "🌠 Supernova",
+    "category": "Celestial"
+  },
+  "shipwreck": {
+    "name": "🚢 Shipwreck",
+    "category": "Technological"
+  },
+  "wave": {
+    "name": "🌊 Wave",
+    "category": "Natural"
+  },
+  "nebula": {
+    "name": "🌌 Nebula",
+    "category": "Celestial"
+  },
+  "cloud": {
+    "name": "☁️ Cloud",
+    "category": "Atmospheric"
+  },
+  "space-bird": {
+    "name": "🐦 Space-Bird",
+    "category": "Technological"
+  },
+  "fishing": {
+    "name": "🎣 Fishing",
+    "category": "Technological"
+  },
+  "statue": {
+    "name": "🗽 Statue",
+    "category": "Technological"
   }
 }

@@ -23,5 +23,22 @@
   "lava+earth": "stone",
   "wind+fire": "smoke",
   "fire+fire": "volcano",
-  "airplane+water": "boat"
+  "airplane+water": "boat",
+  "water+crash": "tsunami",
+  "volcano+star": "supernova",
+  "airplane+airplane": "airplane",
+  "wreck+wreck": "shipwreck",
+  "water+wreck": "shipwreck",
+  "wind+wind": "tornado",
+  "water+wind": "wave",
+  "supernova+smoke": "nebula",
+  "steam+steam": "cloud",
+  "lava+boat": "volcano",
+  "wave+planet": "tsunami",
+  "planet+volcano": "earth",
+  "bird+rocket": "space-bird",
+  "lava+steam": "volcano",
+  "jet+tsunami": "tsunami",
+  "boat+fish": "fishing",
+  "smoke+stone": "statue"
 }
