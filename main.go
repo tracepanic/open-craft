@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,6 +32,7 @@ type GameState struct {
 	Elements   map[string]Element `json:"elements"`
 	Recipes    map[string]string  `json:"recipes"`
 	Discovered []string           `json:"discovered"`
+	Impossible []string
 }
 
 type TelegramBot struct {
@@ -119,19 +121,50 @@ func getTelegramUserProgressPath(userID int64) (string, error) {
 	return filepath.Join(telegramDir, fmt.Sprintf("%d.json", userID)), nil
 }
 
-func loadGameState() (*GameState, error) {
+func loadGameState(dev bool) (*GameState, error) {
 	gameState := &GameState{
 		Elements:   make(map[string]Element),
 		Recipes:    make(map[string]string),
 		Discovered: make([]string, 0),
+		Impossible: make([]string, 0),
 	}
 
-	if err := loadEmbeddedJSON("data/elements.json", &gameState.Elements); err != nil {
-		return nil, fmt.Errorf("failed to load elements: %w", err)
-	}
+	if dev {
+		elementsData, err := os.ReadFile(filepath.Join("data/elements.json"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load elements: %w", err)
+		}
+		if err := json.Unmarshal(elementsData, &gameState.Elements); err != nil {
+			return nil, fmt.Errorf("failed to parse elements: %w", err)
+		}
 
-	if err := loadEmbeddedJSON("data/recipes.json", &gameState.Recipes); err != nil {
-		return nil, fmt.Errorf("failed to load recipes: %w", err)
+		recipesData, err := os.ReadFile(filepath.Join("data/recipes.json"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load recipes: %w", err)
+		}
+		if err := json.Unmarshal(recipesData, &gameState.Recipes); err != nil {
+			return nil, fmt.Errorf("failed to parse recipes: %w", err)
+		}
+
+		impossibleData, err := os.ReadFile(filepath.Join("data/impossible.json"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load impossible: %w", err)
+		}
+		if err := json.Unmarshal(impossibleData, &gameState.Impossible); err != nil {
+			return nil, fmt.Errorf("failed to parse impossible: %w", err)
+		}
+	} else {
+		if err := loadEmbeddedJSON("data/elements.json", &gameState.Elements); err != nil {
+			return nil, fmt.Errorf("failed to load elements: %w", err)
+		}
+
+		if err := loadEmbeddedJSON("data/recipes.json", &gameState.Recipes); err != nil {
+			return nil, fmt.Errorf("failed to load recipes: %w", err)
+		}
+
+		if err := loadEmbeddedJSON("data/impossible.json", &gameState.Impossible); err != nil {
+			return nil, fmt.Errorf("failed to load impossible elements: %w", err)
+		}
 	}
 
 	progressPath, err := getProgressFilePath()
@@ -211,6 +244,49 @@ func (gs *GameState) combineElements(elem1, elem2 string) string {
 	}
 
 	return ""
+}
+
+func (gs *GameState) isImpossible(combo string) bool {
+	elements := strings.Split(combo, "+")
+	reverse := elements[1] + "+" + elements[0]
+
+	return slices.Contains(gs.Impossible, combo) ||
+		slices.Contains(gs.Impossible, reverse)
+}
+
+func (gs *GameState) getUntriedCombos() []string {
+	var combos []string
+	allElements := make([]string, 0, len(gs.Elements))
+
+	for elemName := range gs.Elements {
+		allElements = append(allElements, elemName)
+	}
+	sort.Strings(allElements)
+
+	for i, elem1 := range allElements {
+		for j := i; j < len(allElements); j++ {
+			elem2 := allElements[j]
+			combo1 := elem1 + "+" + elem2
+			combo2 := elem2 + "+" + elem1
+
+			if _, exists1 := gs.Recipes[combo1]; exists1 {
+				continue
+			}
+			if _, exists2 := gs.Recipes[combo2]; exists2 {
+				continue
+			}
+
+			if gs.isImpossible(combo1) {
+				continue
+			}
+
+			combos = append(combos, fmt.Sprintf("%s + %s",
+				gs.Elements[elem1].Name,
+				gs.Elements[elem2].Name))
+		}
+	}
+
+	return combos
 }
 
 func NewTelegramBot(token string, gameState *GameState) (*TelegramBot, error) {
@@ -556,9 +632,10 @@ func (tb *TelegramBot) Start() {
 
 func main() {
 	botToken := flag.String("bot", "", "Telegram bot token")
+	devMode := flag.Bool("dev", false, "Enable developer mode")
 	flag.Parse()
 
-	gameState, err := loadGameState()
+	gameState, err := loadGameState(*devMode)
 	if err != nil {
 		fmt.Printf("Failed to load game state: %v\n", err)
 		return
@@ -586,6 +663,10 @@ func main() {
 		fmt.Println("2. 📚 View Discovered Elements")
 		fmt.Println("3. 💡 Show Hints")
 		fmt.Println("4. 💾 Save and Exit")
+		if *devMode {
+			fmt.Println("5. 🔍 View Untried Combinations (Dev)")
+			fmt.Println("6. ⚡ Recipe Creator Flow (Dev)")
+		}
 
 		choice := getInput("\nChoose an option: ", scanner)
 
@@ -642,6 +723,67 @@ func main() {
 			}
 			printSlowly("Thanks for playing! Your progress has been saved.", 30*time.Millisecond)
 			return
+
+		case "5":
+			if *devMode {
+				fmt.Println("\n=== Untried Combinations ===")
+				combos := gameState.getUntriedCombos()
+				if len(combos) == 0 {
+					fmt.Println("You've tried all possible combinations!")
+				} else {
+					fmt.Printf("\nFound %d untried combinations:\n\n", len(combos))
+					for _, combo := range combos {
+						fmt.Println(combo)
+					}
+				}
+				getInput("\nPress Enter to continue...", scanner)
+			} else {
+				printSlowly("Invalid choice.", 30*time.Millisecond)
+				time.Sleep(time.Second)
+			}
+
+		case "6":
+			if *devMode {
+				for {
+					clearScreen()
+					fmt.Println("\n=== Recipe Creator Flow ===")
+
+					newGameState, err := loadGameState(true)
+					if err != nil {
+						fmt.Printf("Error reloading game state: %v\n", err)
+						getInput("\nPress Enter to return to main menu...", scanner)
+						break
+					}
+
+					gameState = newGameState
+					combos := gameState.getUntriedCombos()
+					remainingCount := len(combos)
+
+					if remainingCount == 0 {
+						fmt.Println("\nNo more combinations available to create recipes for!")
+						getInput("\nPress Enter to return to main menu...", scanner)
+						break
+					}
+
+					var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+					randomIndex := rng.Intn(len(combos))
+					combo := combos[randomIndex]
+
+					fmt.Printf("\nRemaining possible combinations: %d\n\n", remainingCount)
+					fmt.Printf("Suggested combination to create recipe for:\n%s\n\n", combo)
+
+					fmt.Println("Options:")
+					fmt.Println("1. Next combination")
+					fmt.Println("2. Return to main menu")
+
+					subchoice := getInput("\nChoice: ", scanner)
+
+					if subchoice != "1" {
+						break
+					}
+				}
+			}
 
 		default:
 			printSlowly("Invalid choice.", 30*time.Millisecond)
