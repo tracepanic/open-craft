@@ -1,19 +1,19 @@
 {
   "water": {
     "name": "💧 Water",
-    "category": "Primordial"
+    "category": "Primodial"
   },
   "fire": {
     "name": "🔥 Fire",
-    "category": "Primordial"
+    "category": "Primodial"
   },
   "wind": {
     "name": "🌪️ Wind",
-    "category": "Primordial"
+    "category": "Primodial"
   },
   "earth": {
     "name": "🌍 Earth",
-    "category": "Primordial"
+    "category": "Primodial"
   },
   "steam": {
     "name": "💨 Steam",
@@ -132,7 +132,7 @@
     "category": "Atmospheric"
   },
   "space-bird": {
-    "name": "🐦 Space-Bird",
+    "name": "🐦 Space Bird",
     "category": "Technological"
   },
   "fishing": {
@@ -142,5 +142,125 @@
   "statue": {
     "name": "🗽 Statue",
     "category": "Technological"
+  },
+  "island": {
+    "name": "🏝️ Island",
+    "category": "Natural"
+  },
+  "rain": {
+    "name": "🌧️ Rain",
+    "category": "Atmospheric"
+  },
+  "pirate": {
+    "name": "🏴‍☠️ Pirate",
+    "category": "Biological"
+  },
+  "space-shuttle": {
+    "name": "🚀 Space Shuttle",
+    "category": "Technological"
+  },
+  "sea": {
+    "name": "🌊 Sea",
+    "category": "Natural"
+  },
+  "ufo": {
+    "name": "🛸 UFO",
+    "category": "Celestial"
+  },
+  "surf": {
+    "name": "🏄 Surf",
+    "category": "Natural"
+  },
+  "pterodactyl": {
+    "name": "🦖 Pterodactyl",
+    "category": "Primodial"
+  },
+  "saturn": {
+    "name": "🪐 Saturn",
+    "category": "Celestial"
+  },
+  "alien": {
+    "name": "👽 Alien",
+    "category": "Celestial"
+  },
+  "rock": {
+    "name": "🪨 Rock",
+    "category": "Natural"
+  },
+  "luna": {
+    "name": "🌙 Luna",
+    "category": "Natural"
+  },
+  "sailor": {
+    "name": "⛵️ Sailor",
+    "category": "Technological"
+  },
+  "engine": {
+    "name": "🚗 Engine",
+    "category": "Technological"
+  },
+  "fishing-rod": {
+    "name": "🎣 Fishing Rod",
+    "category": "Technological"
+  },
+  "continent": {
+    "name": "🌍 Continent",
+    "category": "Natural"
+  },
+  "captain": {
+    "name": "🧑‍✈️ Captain",
+    "category": "Biological"
+  },
+  "submarine": {
+    "name": "🚤 Submarine",
+    "category": "Technological"
+  },
+  "penguin": {
+    "name": "🐧 Penguin",
+    "category": "Biological"
+  },
+  "sun": {
+    "name": "☀️ Sun",
+    "category": "Celestial"
+  },
+  "space-pirate": {
+    "name": "🏴‍☠️ Space Pirate",
+    "category": "Biological"
+  },
+  "fisherman": {
+    "name": "🎣 Fisherman",
+    "category": "Biological"
+  },
+  "golem": {
+    "name": "🏛️ Golem",
+    "category": "Technological"
+  },
+  "sky": {
+    "name": "🌌 Sky",
+    "category": "Atmospheric"
+  },
+  "titanic": {
+    "name": "🚢 Titanic",
+    "category": "Technological"
+  },
+  "storm": {
+    "name": "⛈️ Storm",
+    "category": "Atmospheric"
+  },
+  "surfer": {
+    "name": "🏄 Surfer",
+    "category": "Biological"
+  },
+  "mermaid": {
+    "name": "🧜‍♀️ Mermaid",
+    "category": "Mythical"
+  },
+  "phoenix": {
+    "name": "🔥 Phoenix",
+    "category": "Mythical"
+  },
+  "pilot": {
+    "name": "✈️ Pilot",
+    "category": "Biological"
   }
 }
