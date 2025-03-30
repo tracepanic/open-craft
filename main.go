@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -45,6 +46,17 @@ type UserState struct {
 	waitingForFirstElement  bool
 	waitingForSecondElement bool
 	firstElement            string
+}
+
+type CombineRequest struct {
+	ElementOne string `json:"element_one"`
+	ElementTwo string `json:"element_two"`
+}
+
+type CombineResponse struct {
+	Success bool   `json:"success"`
+	Result  string `json:"result,omitempty"`
+	Error   string `json:"error,omitempty"`
 }
 
 func loadEmbeddedJSON(filename string, v any) error {
@@ -340,6 +352,38 @@ func (tb *TelegramBot) getUserGameState(userID int64) (*GameState, error) {
 	return gameState, nil
 }
 
+func handleCombineAPI(gameState *GameState) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		elem1 := normalizeElementName(r.URL.Query().Get("element-one"))
+		elem2 := normalizeElementName(r.URL.Query().Get("element-two"))
+
+		combo1 := elem1 + "+" + elem2
+		combo2 := elem2 + "+" + elem1
+
+		response := CombineResponse{}
+
+		if result, exists := gameState.Recipes[combo1]; exists {
+			response.Success = true
+			response.Result = gameState.Elements[result].Name
+		} else if result, exists := gameState.Recipes[combo2]; exists {
+			response.Success = true
+			response.Result = gameState.Elements[result].Name
+		} else {
+			response.Success = false
+			response.Error = "These elements cannot be combined"
+		}
+
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
 func (tb *TelegramBot) sendMainMenu(chatID int64) {
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
@@ -633,11 +677,21 @@ func (tb *TelegramBot) Start() {
 func main() {
 	botToken := flag.String("bot", "", "Telegram bot token")
 	devMode := flag.Bool("dev", false, "Enable developer mode")
+	apiMode := flag.String("api", "", "Start API server on specified port (e.g. :8080)")
 	flag.Parse()
 
 	gameState, err := loadGameState(*devMode)
 	if err != nil {
 		fmt.Printf("Failed to load game state: %v\n", err)
+		return
+	}
+
+	if *apiMode != "" {
+		http.HandleFunc("/combine", handleCombineAPI(gameState))
+		fmt.Printf("Starting API server on port %s...\n", *apiMode)
+		if err := http.ListenAndServe(*apiMode, nil); err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 
